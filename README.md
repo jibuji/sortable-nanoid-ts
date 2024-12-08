@@ -65,8 +65,8 @@ const generator = new SortableIDGenerator({
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `alphabet` | string | `0-9a-zA-Z-_` | Characters used in ID generation |
-| `totalLength` | number | 31 | Total length of generated IDs |
-| `timestampLength` | number | 10 | Length of timestamp portion |
+| `totalLength` | number | 32 | Total length of generated IDs |
+| `timestampLength` | number | 11 | Length of timestamp portion |
 | `timestampStart` | Date | 2024-01-01 | Start date for timestamp calculation |
 | `timestampEnd` | Date | - | End date for timestamp calculation |
 | `timestampLevel` | TimestampLevel | 'millisecond' | Timestamp precision |

@@ -46,7 +46,7 @@ export class SortableIDGenerator {
         // Set defaults and validate configuration
         this.alphabet = (config.alphabet || this.DEFAULT_ALPHABET).split('').sort().join('');
         this.base = this.alphabet.length;
-        this.totalLength = config.totalLength || 31;
+        this.totalLength = config.totalLength || 32;
         this.timestampStart = config.timestampStart || new Date(2024, 0, 1);
         this.timestampLevel = config.timestampLevel || 'millisecond';
 
@@ -67,8 +67,8 @@ export class SortableIDGenerator {
             this.timestampLength = this.calculateRequiredLength(timespan);
             this.maxTimestamp = timespan;
         } else {
-            this.timestampLength = 10; // Default timestamp length
-            this.maxTimestamp = this.calculateMaxTimestamp(10);
+            this.timestampLength = 11; // Default timestamp length
+            this.maxTimestamp = this.calculateMaxTimestamp(11);
         }
         
         // Validate total length
