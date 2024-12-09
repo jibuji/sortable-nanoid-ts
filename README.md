@@ -1,15 +1,16 @@
 # Sortable NanoID
 
-A customizable, time-based, sortable ID generator that combines timestamps with random strings. Perfect for distributed systems where chronological ordering is important.
+A customizable, time-based, sortable ID generator that combines timestamps with chronological counters. Perfect for distributed systems where chronological ordering and high-frequency ID generation are important.
 
 ## Features
 
 - ⚡ **Time-based Sorting**: Generated IDs are naturally sortable by creation time
-- 🔧 **Highly Configurable**: Customize alphabet, length, timestamp precision, and more
-- 🌍 **Time Range Control**: Set start/end dates to optimize ID length for your needs
-- 🔄 **Collision Handling**: Guarantees unique IDs even when generated in the same timestamp
+- 🎯 **Configurable Generation Rate**: Set maximum generation rate from 10/nanosecond to 1/second
+- 🔧 **Highly Customizable**: Configure alphabet, length, timestamp precision, and more
+- 🌍 **200-Year Range**: Built-in support for 200 years from start date
+- 🔄 **Chronological Counter**: Ensures uniqueness and sortability even at high generation rates
 - 🔒 **Secure**: Uses cryptographically secure random number generation
-- 📊 **Decodable**: Extract timestamp information from generated IDs
+- 📊 **Decodable**: Extract timestamp and counter information from generated IDs
 
 ## Installation
 
@@ -20,18 +21,20 @@ npm install sortable-nanoid
 ## Quick Start
 
 ```typescript
-import { SortableIDGenerator } from 'sortable-nanoid';
+import { SortableIDGenerator, MaxSortableRate } from 'sortable-nanoid';
 
 // Create a generator with default settings
 const generator = new SortableIDGenerator();
 
 // Generate a sortable ID
-const id = await generator.generate();
+const id = generator.generate();
 console.log('Generated ID:', id);
 
 // Decode the timestamp from an ID
 const decoded = generator.decode(id);
 console.log('Timestamp:', decoded.timestamp);
+console.log('Chrono Part:', decoded.chronoPart);
+console.log('Machine ID:', decoded.machineId);
 ```
 
 ## Configuration
@@ -46,14 +49,11 @@ const generator = new SortableIDGenerator({
     // Total length of generated IDs
     totalLength: 20,
     
-    // Length of timestamp portion
-    timestampLength: 10,
-    
-    // Start date for timestamp calculation
+    // Start date for timestamp calculation (default: 2024-01-01)
     timestampStart: new Date(2024, 0, 1),
     
-    // End date for timestamp calculation
-    timestampEnd: new Date(2124, 0, 1),
+    // Maximum generation rate
+    maxSortableRate: MaxSortableRate.Micro100,
     
     // Timestamp precision level
     timestampLevel: 'millisecond'
@@ -66,16 +66,22 @@ const generator = new SortableIDGenerator({
 |--------|------|---------|-------------|
 | `alphabet` | string | `0-9a-zA-Z-_` | Characters used in ID generation |
 | `totalLength` | number | 32 | Total length of generated IDs |
-| `timestampLength` | number | 11 | Length of timestamp portion |
 | `timestampStart` | Date | 2024-01-01 | Start date for timestamp calculation |
-| `timestampEnd` | Date | - | End date for timestamp calculation |
+| `maxSortableRate` | MaxSortableRate | Micro1 | Maximum ID generation rate |
 | `timestampLevel` | TimestampLevel | 'millisecond' | Timestamp precision |
+
+### Generation Rates (MaxSortableRate)
+
+Available generation rates:
+- `Micro100`: 100 generations per microsecond
+- `Micro1`: 1 generation per microsecond
+- `Milli10`: 10 generations per millisecond
+- `Second100`: 100 generations per second
+- `Second1`: 1 generation per second
 
 ### Timestamp Levels
 
 Available precision levels for timestamps:
-- `nanosecond`
-- `microsecond`
 - `millisecond`
 - `second`
 - `minute`
@@ -90,92 +96,102 @@ Available precision levels for timestamps:
 
 ```typescript
 const generator = new SortableIDGenerator();
-const id = await generator.generate();
+const id = generator.generate();
 ```
 
-### Custom Alphabet and Length
+### High-Frequency Generation
+
+```typescript
+const highFreqGenerator = new SortableIDGenerator({
+    maxSortableRate: MaxSortableRate.Micro100,
+    timestampLevel: 'millisecond'
+});
+
+// Generate IDs at high frequency
+const id = highFreqGenerator.generate();
+```
+
+### Day-Level Timestamp with Low Rate
+
+```typescript
+const dayGenerator = new SortableIDGenerator({
+    timestampLevel: 'day',
+    maxSortableRate: MaxSortableRate.Second1
+});
+
+const id = dayGenerator.generate();
+```
+
+### Short IDs with Minute Precision
+
+```typescript
+const shortGenerator = new SortableIDGenerator({
+    totalLength: 16,
+    timestampLevel: 'minute',
+    maxSortableRate: MaxSortableRate.Second1
+});
+
+const id = shortGenerator.generate();
+```
+
+### Custom Alphabet
 
 ```typescript
 const hexGenerator = new SortableIDGenerator({
     alphabet: '0123456789ABCDEF',
     totalLength: 20,
-    timestampLength: 10
+    maxSortableRate: MaxSortableRate.Second100
 });
+
+const id = hexGenerator.generate();
 ```
 
-### Future-Proof IDs
+## ID Structure
 
+Each generated ID consists of three parts:
+1. **Timestamp Part**: Encodes the time since `timestampStart`
+2. **Chrono Part**: Counter that increments when multiple IDs are generated in the same timestamp
+3. **Machine ID Part**: Random part that ensures uniqueness across different machines
+
+The length of each part is automatically calculated based on your configuration:
+- Timestamp length is determined by the time range (200 years) and timestamp level
+- Chrono length is determined by the maxSortableRate
+- Machine ID takes the remaining length
+
+## Error Handling
+
+The generator will throw errors in these cases:
+- Generation rate exceeded (when generating IDs faster than configured rate)
+- Current time exceeds maximum supported timestamp
+- Invalid configuration (alphabet, length, etc.)
+
+Example:
 ```typescript
-const futureGenerator = new SortableIDGenerator({
-    timestampStart: new Date(2024, 0, 1),
-    timestampEnd: new Date(2124, 0, 1), // 100 years
-    timestampLevel: 'day'
-});
-```
-
-### High-Precision Timestamps
-
-```typescript
-const preciseGenerator = new SortableIDGenerator({
-    timestampLevel: 'nanosecond',
-    timestampLength: 12
-});
-```
-
-### Short IDs
-
-```typescript
-const shortGenerator = new SortableIDGenerator({
-    totalLength: 12,
-    timestampLength: 6,
-    timestampLevel: 'minute'
-});
-```
-
-## API Reference
-
-### `generate()`
-
-Generates a new sortable ID.
-
-```typescript
-const id = await generator.generate();
-```
-
-### `decode(id: string)`
-
-Decodes a generated ID back into its timestamp and random components.
-
-```typescript
-const { timestamp, random } = generator.decode(id);
-```
-
-### `getMaxDate()`
-
-Returns the maximum date supported by the current configuration.
-
-```typescript
-const maxDate = generator.getMaxDate();
-```
-
-### `printInfo()`
-
-Prints and returns the current configuration details.
-
-```typescript
-const info = generator.printInfo();
+try {
+    const id = generator.generate();
+} catch (error) {
+    if (error.message.includes('Generation rate exceeded')) {
+        // Handle rate limit error
+    }
+}
 ```
 
 ## Best Practices
 
-1. Choose an appropriate `timestampLevel` based on your needs:
-   - Use `millisecond` for general purposes
-   - Use `nanosecond` for high-frequency ID generation
-   - Use `day` or `month` for long-term identifiers
+1. Choose appropriate `maxSortableRate` based on your needs:
+   - Use higher rates (`Micro100`) for high-frequency generation
+   - Use lower rates (`Second1`, `Second100`) for normal applications
+   - Higher rates require more characters for the chrono part
 
-2. Set appropriate `timestampStart` and `timestampEnd` dates to optimize ID length
+2. Select `timestampLevel` based on your precision requirements:
+   - Use `millisecond` for high-precision timestamps
+   - Use `minute` or `hour` for longer IDs with less precision
+   - Lower precision levels result in shorter timestamp parts
 
-3. Ensure `totalLength` is sufficient for your random portion needs
+3. Set appropriate `totalLength`:
+   - Must be sufficient for timestamp + chrono + machine ID parts
+   - Longer IDs allow for higher generation rates and longer time ranges
+   - Consider your storage and bandwidth constraints
 
 ## License
 

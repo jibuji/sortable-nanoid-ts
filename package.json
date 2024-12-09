@@ -1,6 +1,6 @@
 {
     "name": "sortable-nanoid",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "A customizable, time-based, sortable ID generator",
     "keywords": ["id", "uuid", "nanoid", "sortable", "timestamp"],
     "author": "Your Name",
